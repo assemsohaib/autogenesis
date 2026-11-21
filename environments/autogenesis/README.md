@@ -1,6 +1,7 @@
 # autogenesis
 
-An RL environment whose policy builds RL environments.
+An RL environment whose policy builds RL environments. Source, tests and baseline
+results: https://github.com/assemsohaib/autogenesis
 
 The policy (the **builder**) gets a short domain brief and writes a Python module with
 three functions:
@@ -47,12 +48,19 @@ one shuffled batch, so `verify()` cannot tell which call is the audit.
 ## Usage
 
 ```bash
-# full reward (panel on): pin two different solver models
+prime env install assemsohaib/autogenesis
+```
+
+Builder code runs in a Docker container with no network by default, so a running
+Docker daemon is needed (or use `--env.sandbox.type prime`).
+
+```bash
+# audit-only reward (default when no solvers are set; no solver calls)
+vf-run autogenesis -m <builder-model>
+
+# full reward: pin two different solver models; the panel then turns on
 vf-run autogenesis -m <builder-model> \
   --env.weak.model <small-model> --env.strong.model <large-model>
-
-# audit-only reward (no solver calls)
-vf-run autogenesis -m <builder-model> --env.panel.instances 0
 
 # held-out families, 4 attempts per brief, solver calls in parallel
 vf-run autogenesis -m <builder-model> -r 4 --env.taskset.split eval \
@@ -67,9 +75,9 @@ Main options (`vf-run autogenesis --help` shows all):
 | `--env.audit.seed` | random | Fix the hidden seeds (reproducible evals) |
 | `--env.audit.call-timeout` | 2.0 | Seconds per builder function call |
 | `--env.audit.diversity-weight` | 0.5 | Weight of the diversity term |
-| `--env.panel.instances` | 6 | Tasks per solver. `0` = audit-only |
+| `--env.panel.instances` | auto | Tasks per solver. `0` = audit-only. Auto: 6 when both solvers are set, else 0 |
 | `--env.panel.floor` | 0.25 | Share of the audit score paid with zero discrimination |
-| `--env.sandbox.type` | subprocess | `subprocess`, `docker`, or `prime` |
+| `--env.sandbox.type` | docker | `docker` (no network, 1 GB, 1 CPU), `prime`, or `subprocess` (development only) |
 
 ## Metrics
 
@@ -97,8 +105,10 @@ Builder code is untrusted model output. There are three layers:
    an import hook with the same allowlist, an empty environment, rlimits (memory, CPU,
    no file writes, no core dumps), a time limit for each call, and a per-call result
    nonce on a duplicated stdout.
-3. **Runtime**: a `vf.Runtime`. The default `subprocess` runtime runs on the host and is
-   for **development only**. For training, use `--env.sandbox.type docker` or `prime`.
+3. **Runtime**: a `vf.Runtime`. The default is a Docker container (`python:3.11-slim`)
+   with no network, 1 GB of memory and 1 CPU. `prime` runs the code in a Prime
+   sandbox. `subprocess` runs untrusted model code **on your machine**: use it only for
+   development. The environment logs a warning when you select it.
 
 Known limit: builder code runs in the same interpreter as the runner. Layers 1 and 2
 make tampering with the runner hard. They do not make it impossible. Layer 3 is the

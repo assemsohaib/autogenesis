@@ -9,6 +9,9 @@ This repository holds the first stage: the `autogenesis` environment for the
 [`environments/autogenesis/README.md`](environments/autogenesis/README.md) for the
 environment.
 
+On the Environments Hub: [`assemsohaib/autogenesis`](https://app.primeintellect.ai/dashboard/environments/assemsohaib/autogenesis)
+(`prime env install assemsohaib/autogenesis`).
+
 ```
 environments/autogenesis/   the environment package (taskset id: autogenesis)
 tests/                      unit, sandbox, and end-to-end tests (fake model server)
@@ -52,8 +55,9 @@ Treat these numbers as rough: one build per brief and one seed set.
 
 ```bash
 uv sync                      # Python 3.11–3.14 (verifiers does not support 3.15)
-uv run pytest                # 49 tests, about 2 min, no network or keys needed
+uv run pytest                # about 4 min; needs Docker, no network or keys
 uv run pytest -m "not integration"   # skip the full vf-run episode
+uv run pytest -m "not docker"        # skip the audit tests in Docker
 uv run ruff check . && uv run ruff format --check .
 ```
 

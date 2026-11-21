@@ -19,19 +19,24 @@ carry only a `solved` metric, so they do not dilute episode scores.
 from __future__ import annotations
 
 import asyncio
+import logging
 import random
 from dataclasses import dataclass
 
 import verifiers.v1 as vf
 from pydantic import Field
 from pydantic_config import BaseConfig
-from verifiers.v1.configs.runtime import RuntimeConfig, SubprocessConfig
+from verifiers.v1.configs.runtime import DockerConfig, RuntimeConfig, SubprocessConfig
 from verifiers.v1.harnesses.null import NullHarnessConfig
 from verifiers.v1.runtimes import provision_runtime
 
 from autogenesis.audit import AuditConfig, AuditReport, run_audit
 from autogenesis.prompts import SOLVER_SYSTEM_PROMPT
 from autogenesis.sandbox import Executor, SandboxExecutor
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_PANEL_INSTANCES = 6
 
 
 def _chat_role() -> vf.AgentConfig:
@@ -41,8 +46,10 @@ def _chat_role() -> vf.AgentConfig:
 
 
 class PanelConfig(BaseConfig):
-    instances: int = Field(6, ge=0, le=64)
-    """Generated tasks each solver attempts. 0 turns the panel off (audit-only reward)."""
+    instances: int | None = Field(None, ge=0, le=64)
+    """Generated tasks each solver attempts. 0 turns the panel off (audit-only reward).
+    None (default): 6 when --env.weak.model and --env.strong.model are both set,
+    otherwise 0 (audit-only, with a warning)."""
     floor: float = Field(0.25, ge=0.0, le=1.0)
     """Share of the audit score paid even with zero discrimination, so early training
     still gets signal from the audit alone."""
@@ -57,9 +64,10 @@ class AutogenesisEnvConfig(vf.EnvConfig):
     """Fixed strong solver. Pin it: --env.strong.model <id>."""
     audit: AuditConfig = AuditConfig()
     panel: PanelConfig = PanelConfig()
-    sandbox: RuntimeConfig = SubprocessConfig()
-    """Where builder code runs. subprocess = development only; use docker or prime to
-    train (--env.sandbox.type docker)."""
+    sandbox: RuntimeConfig = DockerConfig(allow=[], memory=1.0, cpu=1.0)
+    """Where builder code runs. Default: a Docker container with no network, 1 GB and
+    1 CPU. `prime` runs it in a Prime sandbox. `subprocess` runs untrusted model code
+    on this machine: use it only for development (--env.sandbox.type subprocess)."""
 
 
 @dataclass
@@ -88,14 +96,26 @@ def combine(report: AuditReport, panel: PanelResult | None, floor: float) -> flo
 class AutogenesisEnv(vf.Env[AutogenesisEnvConfig]):
     def __init__(self, config: AutogenesisEnvConfig) -> None:
         super().__init__(config)
-        if config.panel.instances > 0:
-            weak, strong = config.weak.model, config.strong.model
-            if weak is None or strong is None or weak == strong:
-                raise ValueError(
-                    "the solver panel needs two different pinned models: set "
-                    "--env.weak.model and --env.strong.model, or turn the panel off "
-                    "with --env.panel.instances 0"
+        weak, strong = config.weak.model, config.strong.model
+        if config.panel.instances is None:
+            if weak is None or strong is None:
+                logger.warning(
+                    "autogenesis: solver panel off (audit-only reward). Set "
+                    "--env.weak.model and --env.strong.model to turn it on."
                 )
+            pinned = weak is not None and strong is not None
+            config.panel.instances = DEFAULT_PANEL_INSTANCES if pinned else 0
+        if isinstance(config.sandbox, SubprocessConfig):
+            logger.warning(
+                "autogenesis: sandbox type 'subprocess' runs model-written code on this "
+                "machine. Use it only for development."
+            )
+        if config.panel.instances > 0 and (weak is None or strong is None or weak == strong):
+            raise ValueError(
+                "the solver panel needs two different pinned models: set "
+                "--env.weak.model and --env.strong.model, or turn the panel off "
+                "with --env.panel.instances 0"
+            )
 
     async def setup(self, agents: vf.Agents) -> None:
         # The solvers measure the builder's environment; they are never trained.

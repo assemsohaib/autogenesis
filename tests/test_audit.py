@@ -1,19 +1,25 @@
-"""The audit against real sandbox processes (the verifiers subprocess runtime)."""
+"""The audit against real sandboxes: the verifiers subprocess runtime, and the docker
+runtime (marker `docker`; needs a running Docker daemon)."""
 
 import random
 
 import pytest
-from verifiers.v1.configs.runtime import SubprocessConfig
+from verifiers.v1.configs.runtime import DockerConfig, SubprocessConfig
 from verifiers.v1.runtimes import provision_runtime
 
 import fixtures as fx
 from autogenesis import AuditConfig, run_audit
 from autogenesis.sandbox import SandboxExecutor
 
+RUNTIMES = {
+    "subprocess": SubprocessConfig(),
+    "docker": DockerConfig(allow=[], memory=1.0, cpu=1.0),
+}
 
-@pytest.fixture
-async def executor():
-    async with provision_runtime(SubprocessConfig()) as runtime:
+
+@pytest.fixture(params=["subprocess", pytest.param("docker", marks=pytest.mark.docker)])
+async def executor(request):
+    async with provision_runtime(RUNTIMES[request.param]) as runtime:
         yield SandboxExecutor(runtime, call_timeout=0.5, sandbox_timeout=60)
 
 

@@ -93,15 +93,25 @@ class TestEnvConfig:
         config = vf.resolve_env_config({"taskset": {"id": "autogenesis"}, **extra})
         return vf.load_environment(config)
 
-    def test_panel_needs_two_pinned_models(self):
+    def test_explicit_panel_needs_two_pinned_models(self):
         with pytest.raises(ValueError, match="two different pinned models"):
-            self._env()
+            self._env(panel={"instances": 6})
         with pytest.raises(ValueError, match="two different pinned models"):
             self._env(weak={"model": "m"}, strong={"model": "m"})
 
-    def test_panel_off_or_pinned_loads(self):
-        assert self._env(panel={"instances": 0})
-        assert self._env(weak={"model": "small"}, strong={"model": "large"})
+    def test_panel_defaults_to_audit_only_without_solvers(self):
+        assert self._env().config.panel.instances == 0
+        assert self._env(weak={"model": "small"}).config.panel.instances == 0
+
+    def test_panel_turns_on_when_both_solvers_are_pinned(self):
+        env = self._env(weak={"model": "small"}, strong={"model": "large"})
+        assert env.config.panel.instances == 6
+        assert self._env(panel={"instances": 0}).config.panel.instances == 0
+
+    def test_default_sandbox_is_docker_without_network(self):
+        sandbox = self._env().config.sandbox
+        assert sandbox.type == "docker"
+        assert sandbox.network_restricted and sandbox.allow == []
 
     def test_splits_hold_out_families(self):
         train = list(self._env(panel={"instances": 0}).taskset)

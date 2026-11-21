@@ -49,7 +49,8 @@ def run_episode(server: str, out: Path, weak: str) -> tuple[str, dict]:
         str(vf_run), "autogenesis", "-m", "fake-builder", "-n", "1", "-r", "1",
         "--client.base-url", server, "--client.api-key-var", "FAKE_API_KEY",
         "--env.weak.model", weak, "--env.strong.model", "fake-strong",
-        "--env.audit.seed", "7", "--env.panel.instances", "3", "-o", str(out),
+        "--env.audit.seed", "7", "--env.panel.instances", "3", "--env.sandbox.type", "subprocess",
+        "-o", str(out),
     ]  # fmt: skip
     env = {**os.environ, "FAKE_API_KEY": "unused"}
     done = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=600)

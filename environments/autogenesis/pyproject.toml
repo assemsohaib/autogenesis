@@ -1,6 +1,6 @@
 [project]
 name = "autogenesis"
-version = "0.1.0"
+version = "0.2.1"
 description = "Train models to build RL environments that discriminate between models and resist reward hacking."
 tags = ["meta", "environment-design", "reward-hacking", "multi-agent", "train", "eval"]
 license = "Apache-2.0"
