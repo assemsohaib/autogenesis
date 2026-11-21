@@ -1,0 +1,21 @@
+# single-turn environments with programmatic rewards (popular on the Hub)
+primeintellect/reverse-text
+primeintellect/aime2025
+primeintellect/aime2024
+primeintellect/math500
+primeintellect/ascii-tree
+primeintellect/taxcalc-bench
+arcee-ai/ifeval
+sileod/reasoning-core-env
+maziyar/OpenMed_MedMCQA
+maziyar/OpenMed_PubMedQA
+snorkel-ai/finqa-reasoning
+rose/arc-agi
+srthkdev/contract_nli_env
+srthkdev/legalbench
+kyleavery/cybersoceval
+kunumi/GoodSirMath8k
+aarush/vf-openbench
+primeintellect/gsm8k
+will/gsm8k
+shyampathak/gsm8k-multireward

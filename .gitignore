@@ -3,6 +3,10 @@ docs/
 CLAUDE.md
 .claude/
 runs/
+hub_audit/REPORT.md
+hub_audit/FOLLOWUP.md
+hub_audit/manual_checks.json
+hub_audit/drafts/
 
 # python / tools
 .venv/
