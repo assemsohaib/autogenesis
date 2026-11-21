@@ -1,0 +1,16 @@
+# private (not published)
+docs/
+CLAUDE.md
+.claude/
+runs/
+
+# python / tools
+.venv/
+__pycache__/
+*.pyc
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.env
