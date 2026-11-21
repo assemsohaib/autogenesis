@@ -12,8 +12,12 @@ environment.
 On the Environments Hub: [`assemsohaib/autogenesis`](https://app.primeintellect.ai/dashboard/environments/assemsohaib/autogenesis)
 (`prime env install assemsohaib/autogenesis`).
 
+The [Hub audit guide](hub_audit/README.md) covers isolated v0 and v1 reward checks,
+static multi-turn probes, and optional LLM judges through the Prime CLI.
+
 ```
 environments/autogenesis/   the environment package (taskset id: autogenesis)
+hub_audit/                  isolated Environments Hub audit tools
 tests/                      unit, sandbox, and end-to-end tests (fake model server)
 scripts/summarize.py        per-model summary of vf-run traces
 ```
